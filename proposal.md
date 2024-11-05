@@ -10,7 +10,7 @@ This addon will take any image input and create a 'screen' material from it in b
 - **Screenify**
 	- The main function, will use image input to create a screen material that emulates a real screen, by seperating RGB pixels, an example of the effect can be seen below:
   
-  ![Example Gif](docs\example.gif)
+![2024-11-04 18-23-15_1](https://github.com/user-attachments/assets/87ac34dd-77ba-490e-95bd-18690382a20a)
 - **Make it believable**
 	- The addon will add a 'shell' to the screen using pre-existing assets, such as to give the screen a CRT Television shell, or give it a flatscreen TV shell.
 - **Automate** 
