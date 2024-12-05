@@ -58,7 +58,7 @@ class AssignScreenMaterial():
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
         self.create_nodes(screen_nodes)
-        self.set_location(self.node_list)
+        
 
     def create_nodes( self, screen_nodes):
         bsdf_node = screen_nodes.get('Principled BSDF')
@@ -76,7 +76,7 @@ class AssignScreenMaterial():
         coord_node = screen_nodes.new('ShaderNodeTexCoord')
 
         node_list = [output_node, bsdf_node, img_node, pixel_node, math_node["r"], math_node["b"], math_node["g"], mapping_node, coord_node]
-
+        self.set_location(node_list)
 
 
     def set_location(self, node_list):
