@@ -46,8 +46,8 @@ class AssignScreenMaterial():
             
 
     def create_material(self):
-        screen_mat = bpy.data.materials.new(name=f"Screen{self.screen_num}")
-        self.screen_num += 1
+        screen_mat = bpy.data.materials.new(name=f"Screen")
+        #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
         self.setup_material(screen_mat)
     
@@ -57,17 +57,23 @@ class AssignScreenMaterial():
         screen_nodes = node_tree.nodes
         bsdf_node = screen_nodes.get('Principled BSDF')
         output_node = screen_nodes.get('Material Output')
+        img_node = screen_nodes.new('ShaderNodeTexImage')
         pixel_node = screen_nodes.new('ShaderNodeTexImage')
         mapping_node = screen_nodes.new('ShaderNodeMapping')
         coord_node = screen_nodes.new('ShaderNodeTexCoord')
 
-        node_list = [output_node, bsdf_node,]
+        node_list = [output_node, bsdf_node, img_node, pixel_node, mapping_node, coord_node]
 
         self.set_locations(node_list)
 
-    def set_location(node_list, self):
+    def set_location(node_list):
+        x_pos = 200
         for node in node_list:
-            node.location = (0, y_pos)
+            node.location = (x_pos, 0)
+            x_pos -= 250
+    
+        node_list[2].location = (node_list[2].location.x, +150)
+        node_list[3].location = (node_list[3].location.x, -300)
 
         
 
@@ -76,10 +82,10 @@ class AssignScreenMaterial():
         
 
 
-    def execute(self):
+     def execute(self):
         
 
-    return {'FINISHED'}
+        return {'FINISHED'}
     
 
 
