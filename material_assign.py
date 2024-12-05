@@ -27,7 +27,7 @@ class LoadImage():
 
 
 
-class AssignScreenMaterial():
+class ScreenMaterial():
 
     bl_idname = ""
     bl_label = "Assign Screen Material to Specified Object"
@@ -36,6 +36,7 @@ class AssignScreenMaterial():
 
     def __init__(self):
         self.create_material()
+        is_crt = False
 
     def check_material_existance(self):
         exists = False
@@ -57,10 +58,9 @@ class AssignScreenMaterial():
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
-        self.create_nodes(screen_nodes)
+        self.create_nodes(node_tree, screen_nodes)
         
-
-    def create_nodes( self, screen_nodes):
+    def create_nodes( self, node_tree, screen_nodes):
         bsdf_node = screen_nodes.get('Principled BSDF')
         output_node = screen_nodes.get('Material Output')
         img_node = screen_nodes.new('ShaderNodeTexImage')
@@ -72,12 +72,16 @@ class AssignScreenMaterial():
         b = self.mult_template(screen_nodes)
         mapping_node = screen_nodes.new('ShaderNodeMapping')
         coord_node = screen_nodes.new('ShaderNodeTexCoord')
+        if self.is_crt:
+            crt_tex = screen_nodes.new("ShaderNodeTexWave")
+        
 
         node_list = [output_node, bsdf_node, r, g, b, sep_rgb_node_img, img_node, sep_rgb_node_pix, pixel_node, mapping_node, coord_node]
         self.set_location(node_list)
-        return(node_list)
+        self.link_nodes(node_list)
 
-
+    def link_nodes(self):
+        
 
 
     def mult_template(self, screen_nodes):
@@ -95,6 +99,7 @@ class AssignScreenMaterial():
             else: node.location = (x_pos, 50)
             counter+=1
             x_pos -= 250
+        # Somewhat unorganized result, may need to redo later.
 
 
         
