@@ -34,18 +34,17 @@ class ScreenMaterial():
     bl_options = {'REGISTER', 'UNDO'}
     screen_num = 0
 
-    def __init__(self):
+    def __init__(self, exists = False):
         self.create_material()
         is_crt = False
 
-    def check_material_existance(self):
-        exists = False
+    def check_material_exist(self):
         for material in obj.material_slots:
             for num in range(0,10):
                 if material.name.replace(str(num),"") == "Screen":
                     self.setup_material(material)
                     #Assign existing material to screen_mat to allow for editing
-        return(exists)
+        return()
             
 
     def create_material(self):
@@ -74,12 +73,15 @@ class ScreenMaterial():
         'mapping_node' : screen_nodes.new('ShaderNodeMapping'),
         'coord_node' : screen_nodes.new('ShaderNodeTexCoord')
         }
-        if self.is_crt:
-            crt_tex = screen_nodes.new("ShaderNodeTexWave")
+        #if self.is_crt:
+            #crt_tex = screen_nodes.new("ShaderNodeTexWave")
         
+        links = node_tree.links
+        links.new(nodes['img_node'].outputs['Color'], nodes['bsdf_node'].inputs[0])
 
+        self.link_nodes(nodes, node_tree)
         self.set_location(nodes)
-        self.link_nodes(nodes)
+
 
   
         
@@ -102,7 +104,8 @@ class ScreenMaterial():
             x_pos -= 250
         # Somewhat unorganized result, may need to redo later.
 
-    def link_nodes(self):
+    def link_nodes(self, nodes, node_tree):
+    
 
 
         
