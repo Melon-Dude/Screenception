@@ -1,7 +1,7 @@
 import bpy
 import bpy_extras.image_utils as bpyimage
 from bpy_extras.io_utils import ImportHelper
-from bpy_types import 
+from bpy.types import Operator
 
 bl_info= {
     "name" : "Screenify",
@@ -9,7 +9,7 @@ bl_info= {
 }
 
 
-class AssignScreenMaterial():
+class ImageImporter(Operator, ImportHelper):
 
     bl_idname = "import_image.screenify"
     bl_label = "Create a screen with an imported image"
