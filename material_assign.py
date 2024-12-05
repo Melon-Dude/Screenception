@@ -73,29 +73,14 @@ class ScreenMaterial():
         'sep_rgb_node_pix' : screen_nodes.new('ShaderNodeSeparateColor'),
         'img_mapping_node' : screen_nodes.new('ShaderNodeMapping'),
         'pix_mapping_node' : screen_nodes.new('ShaderNodeMapping'),
+        'pixel_scale' : screen_nodes.new('ShaderNodeVectorTransform'),
         'coord_node' : screen_nodes.new('ShaderNodeTexCoord')
         }
         #if self.is_crt:
             #crt_tex = screen_nodes.new("ShaderNodeTexWave")
         
-        links = node_tree.links
-        links.new(nodes['coord_node'].outputs['UV'], nodes['img_mapping_node'].inputs[0])
-        links.new(nodes['img_mapping_node'].outputs['Vector'], nodes['img_node'].inputs[0])
-        links.new(nodes['coord_node'].outputs['UV'], nodes['pix_mapping_node'].inputs[0])
-        links.new(nodes['pix_mapping_node'].outputs['Vector'], nodes['pixel_node'].inputs[0])
-        links.new(nodes['img_node'].outputs['Color'], nodes['sep_rgb_node_img'].inputs[0])
-        links.new(nodes['sep_rgb_node_img'].outputs['Red'], nodes['r'].inputs[0])
-        links.new(nodes['sep_rgb_node_img'].outputs['Blue'], nodes['b'].inputs[0])
-        links.new(nodes['sep_rgb_node_img'].outputs['Green'], nodes['g'].inputs[0])
-        links.new(nodes['pixel_node'].outputs['Color'], nodes['sep_rgb_node_pix'].inputs[0])
-        links.new(nodes['sep_rgb_node_pix'].outputs['Red'], nodes['r'].inputs[1])
-        links.new(nodes['sep_rgb_node_pix'].outputs['Blue'], nodes['b'].inputs[1])
-        links.new(nodes['sep_rgb_node_pix'].outputs['Green'], nodes['g'].inputs[1])
-        links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[0])
-        links.new(nodes['b'].outputs['Value'], nodes['combine_rgb'].inputs[1])
-        links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[2])
-        links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[28])
 
+        self.link_nodes(nodes, node_tree)
         self.set_location(nodes)
 
 
@@ -114,13 +99,32 @@ class ScreenMaterial():
         counter = 0
         for node in nodes.values():
             if counter%2 == 1:
-                node.location = (x_pos, -50)
-            else: node.location = (x_pos, 50)
+                node.location = (x_pos, -150)
+            else: node.location = (x_pos, 150)
             counter+=1
             x_pos -= 250
         # Somewhat unorganized result, may need to redo later.
 
     def link_nodes(self, nodes, node_tree):
+
+        links = node_tree.links
+        links.new(nodes['coord_node'].outputs['UV'], nodes['img_mapping_node'].inputs[0])
+        links.new(nodes['img_mapping_node'].outputs['Vector'], nodes['img_node'].inputs[0])
+        links.new(nodes['coord_node'].outputs['UV'], nodes['pix_mapping_node'].inputs[0])
+        links.new(nodes['pixel_scale'].outputs['Vector'], nodes['pix_mapping_node'].inputs[3])
+        links.new(nodes['pix_mapping_node'].outputs['Vector'], nodes['pixel_node'].inputs[0])
+        links.new(nodes['img_node'].outputs['Color'], nodes['sep_rgb_node_img'].inputs[0])
+        links.new(nodes['sep_rgb_node_img'].outputs['Red'], nodes['r'].inputs[0])
+        links.new(nodes['sep_rgb_node_img'].outputs['Blue'], nodes['b'].inputs[0])
+        links.new(nodes['sep_rgb_node_img'].outputs['Green'], nodes['g'].inputs[0])
+        links.new(nodes['pixel_node'].outputs['Color'], nodes['sep_rgb_node_pix'].inputs[0])
+        links.new(nodes['sep_rgb_node_pix'].outputs['Red'], nodes['r'].inputs[1])
+        links.new(nodes['sep_rgb_node_pix'].outputs['Blue'], nodes['b'].inputs[1])
+        links.new(nodes['sep_rgb_node_pix'].outputs['Green'], nodes['g'].inputs[1])
+        links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[0])
+        links.new(nodes['b'].outputs['Value'], nodes['combine_rgb'].inputs[1])
+        links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[2])
+        links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
     
 
 
