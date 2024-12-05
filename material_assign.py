@@ -1,6 +1,4 @@
 import bpy
-import bpy_extras.image_utils as bpyimage
-from bpy_extras.io_utils import ImportHelper
 from bpy.types import (Panel, Menu, Operator, PropertyGroup)
 from bpy.props import (StringProperty,
                        IntProperty,
@@ -16,9 +14,9 @@ bl_info= {
     }
 
 
-class ScreenProperties(PropertyGroup):
+class SC_PG_ScreenProperties(PropertyGroup):
 
-    x_pixels = IntProperty(
+    x_pixels: IntProperty(
         name = "Horizontal Pixels",
         description="Pixels on the horizontal axis of the screen (X axis)",
         default = 1920,
@@ -26,7 +24,7 @@ class ScreenProperties(PropertyGroup):
         max = 10000,
     )
 
-    y_pixels = IntProperty(
+    y_pixels: IntProperty(
         name = "Vertical Pixels",
         description="Pixels on the vertical axis of the screen (Y axis)",
         default = 1080,
@@ -34,14 +32,14 @@ class ScreenProperties(PropertyGroup):
         max = 10000,
     )
 
-    screen_size = FloatProperty(
-        name = "Screen Size in inches",
-        description="The size of the display!",
-        default = 50,
+    screen_ppi: FloatProperty(
+        name = "Pixels per inch (PPI)",
+        description="Pixels per inch of the screen, will be used to calculate size.",
+        default = 45,
         min = 0,
     )
 
-    screen_type = EnumProperty(
+    screen_type: EnumProperty(
         name = "Display Type",
         description="Changes the style of display",
         items=[('OP1', 'Regular', ''),
@@ -50,30 +48,51 @@ class ScreenProperties(PropertyGroup):
                ]
     )
 
+    img_path: StringProperty(
+        name = "Image",
+        description="Choose an Image:",
+        default="",
+        maxlen=1024,
+        subtype='DIR_PATH' # FILE_PATH
+        )
+
 
     
 
-class ScreenMaterialOperator(bpy.types.Operator):
+class SC_OT_ScreenMaterialOperator(Operator):
 
-    bl_idname = "screen_material_operator"
+    bl_idname = "sc.material_operator"
     bl_label = "Assign Screen Material to Specified Object"
     bl_options = {'REGISTER', 'UNDO'}
 
     
     def execute(self, context):
         screenception = context.scene.screenception
-        self.create_material(screenception)
+        image = bpy.data.images.load(screenception)
+        self.create_material(screenception, image)
         return {'FINISHED'}        
 
-    def create_material(self, screenception):
+
+
+
+    def create_mesh(self, screenception):
+        bpy.ops.mesh.primitive_plane_add(align='CURSOR',scale=self.calculate_scale(screenception))
+
+
+    def calculate_scale(self, screenception):
+        screenception.
+
+
+
+    def create_material(self, screenception, image):
         screen_mat = bpy.data.materials.new(name=f"Screen")
         #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
-        self.create_nodes(screen_mat, screenception)
+        self.create_nodes(screen_mat, screenception, image)
         self.assign_material(screen_mat)
 
         
-    def create_nodes(self, screen_mat, screenception):
+    def create_nodes(self, screen_mat, screenception, image):
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
@@ -93,13 +112,13 @@ class ScreenMaterialOperator(bpy.types.Operator):
         'pixel_scale' : screen_nodes.new('ShaderNodeVectorTransform'),
         'coord_node' : screen_nodes.new('ShaderNodeTexCoord')
         }
-        #if self.is_crt:
-            #crt_tex = screen_nodes.new("ShaderNodeTexWave")
+        if screenception.screen_type == "CRT":
+            nodes['wave'] = screen_nodes.new("ShaderNodeTexWave")
         
 
         self.link_nodes(nodes, node_tree)
         self.set_location(nodes)
-        self.assign_values(nodes, screenception)
+        self.assign_values(nodes, screenception, image)
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
@@ -138,12 +157,13 @@ class ScreenMaterialOperator(bpy.types.Operator):
         links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[1])
         links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
     
-    def assign_values(self, nodes, screenception):
+    def assign_values(self, nodes, screenception, image):
         nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
         nodes["bsdf_node"].inputs[28].default_value = 1
         nodes["pixel_scale"].inputs[0].default_value[0] = screenception.x_pixels
-        nodes["pixel_scale"].inputs[0].default_value[1] = screenception.x_pixels
+        nodes["pixel_scale"].inputs[0].default_value[1] = screenception.y_pixels
         nodes["pixel_scale"].inputs[0].default_value[2] = 1
+        nodes["img_node"].image = image
 
 
     def assign_material(self, mat):
@@ -154,11 +174,13 @@ class ScreenMaterialOperator(bpy.types.Operator):
 
 
 
-class ScreenCreationPanel(Panel):
+class OBJECT_PT_ScreenPanel(Panel):
     bl_label = "Screenception"
+    bl_category = "Screenception" 
+    bl_idname = "OBJECT_PT_screen_panel"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
-    bl_context = "object"
+
 
 
     def draw(self, context):
@@ -167,15 +189,17 @@ class ScreenCreationPanel(Panel):
         layout.prop(screenception, "x_pixels")
         layout.prop(screenception, "y_pixels")
         layout.prop(screenception, "screen_size")
+        layout.prop(screenception, "screen_type")
+        layout.prop(screenception, "img_path")
 
         layout.separator(factor=1.5)
-        layout.operator("screen_material_operator")
+        layout.operator("sc.material_operator")
 
 
 classes = (
-    ScreenMaterialOperator,
-    ScreenProperties,
-    ScreenCreationPanel,
+    SC_OT_ScreenMaterialOperator,
+    SC_PG_ScreenProperties,
+    OBJECT_PT_ScreenPanel
 )
 
 
@@ -183,7 +207,7 @@ def register():
     for c in classes:
         register_class(c)
 
-    bpy.types.Scene.screenception = PointerProperty(ScreenProperties)
+    bpy.types.Scene.screenception = PointerProperty(type=SC_PG_ScreenProperties)
 
 def unregister():
     for c in reversed(classes):
