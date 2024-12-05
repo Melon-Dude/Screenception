@@ -67,26 +67,23 @@ class AssignScreenMaterial():
         sep_rgb_node_img = screen_nodes.new('ShaderNodeSeparateColor')
         pixel_node = screen_nodes.new('ShaderNodeTexImage')
         sep_rgb_node_pix = screen_nodes.new('ShaderNodeSeparateColor')
-        mult_nodes = self.create_mult_nodes(screen_nodes)
+        r = self.mult_template(screen_nodes)
+        g = self.mult_template(screen_nodes)
+        b = self.mult_template(screen_nodes)
         mapping_node = screen_nodes.new('ShaderNodeMapping')
         coord_node = screen_nodes.new('ShaderNodeTexCoord')
 
-        node_list = [output_node, bsdf_node, mult_nodes["r"], mult_nodes["b"], mult_nodes["g"], sep_rgb_node_img, img_node, sep_rgb_node_pix, pixel_node, mapping_node, coord_node]
+        node_list = [output_node, bsdf_node, r, g, b, sep_rgb_node_img, img_node, sep_rgb_node_pix, pixel_node, mapping_node, coord_node]
         self.set_location(node_list)
         return(node_list)
 
 
 
 
-    def create_mult_nodes(self, screen_nodes):
+    def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
         math_template.operation = 'MULTIPLY'
-        return({
-        'r' : math_template,
-        'g' : math_template,
-        'b' : math_template
-        }
-        )
+        return(math_template)
 
 
     def set_location(self, node_list):
