@@ -11,6 +11,13 @@ bl_info= {
 
 obj = bpy.context.active_object
 
+
+
+
+
+
+
+
 class LoadImage():
      def load_image(self):
 #Add UI identifiers (bl_xxxx)
@@ -25,7 +32,10 @@ class LoadImage():
 
         bpyimage.load_image()
 
-
+class ScreenCreationPanel(bpy.types.Panel):
+    bl_space_type = 'PROPERTIES'
+    bl_region_type = 'WINDOW'
+    bl_context = "object"
 
 class ScreenMaterial():
 
@@ -34,9 +44,11 @@ class ScreenMaterial():
     bl_options = {'REGISTER', 'UNDO'}
     screen_num = 0
 
-    def __init__(self, exists = False):
+    def __init__(self, pixel_dimensions, screen_type, user_image, pixel_image):
         self.create_material()
         is_crt = False
+        self.pixel_dimensions = pixel_dimensions
+        self.screen_type = screen_type
 
     def check_material_exist(self):
         for material in obj.material_slots:
@@ -120,6 +132,8 @@ class ScreenMaterial():
         links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[2])
         links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
     
+    def assign_values(self, nodes):
+
 
 
         
@@ -141,10 +155,11 @@ class ScreenMaterial():
 AssignScreenMaterial
 
 def register():
-    bpy.utils.register_class(AssignScreenMaterial)
+    bpy.utils.register_class(ScreenCreationPanel)
+    bpy.utils.register_class(ScreenMaterial)
 
 def unregister():
- bpy.utils.unregister_class(AssignScreenMaterial)
+ bpy.utils.unregister_class(ScreenMaterial)
 
 if __name__ == "__main__":
     register()
