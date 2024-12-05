@@ -1,4 +1,5 @@
 import bpy
+import os
 from bpy.types import (Panel, Menu, Operator, PropertyGroup)
 from bpy.props import (StringProperty,
                        IntProperty,
@@ -68,7 +69,8 @@ class SC_OT_ScreenMaterialOperator(Operator):
     
     def execute(self, context):
         screenception = context.scene.screenception
-        image = bpy.data.images.load(screenception)
+        image = bpy.data.images.load(screenception.img_path)
+        pixel = bpy.data.images.load
         self.create_material(screenception, image)
         return {'FINISHED'}        
 
