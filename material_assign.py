@@ -67,26 +67,38 @@ class AssignScreenMaterial():
         sep_rgb_node_img = screen_nodes.new('ShaderNodeSeparateColor')
         pixel_node = screen_nodes.new('ShaderNodeTexImage')
         sep_rgb_node_pix = screen_nodes.new('ShaderNodeSeparateColor')
-        math_node = {
-            "r" : screen_nodes.new('ShaderNodeMath'),
-            "g" : screen_nodes.new('ShaderNodeMath'),
-            "b" : screen_nodes.new('ShaderNodeMath'),
-        }
+        mult_nodes = self.create_mult_nodes(screen_nodes)
         mapping_node = screen_nodes.new('ShaderNodeMapping')
         coord_node = screen_nodes.new('ShaderNodeTexCoord')
 
-        node_list = [output_node, bsdf_node, img_node, pixel_node, math_node["r"], math_node["b"], math_node["g"], mapping_node, coord_node]
+        node_list = [output_node, bsdf_node, mult_nodes["r"], mult_nodes["b"], mult_nodes["g"], sep_rgb_node_img, img_node, sep_rgb_node_pix, pixel_node, mapping_node, coord_node]
         self.set_location(node_list)
+        return(node_list)
+
+
+
+
+    def create_mult_nodes(self, screen_nodes):
+        math_template = screen_nodes.new('ShaderNodeMath')
+        math_template.operation = 'MULTIPLY'
+        return({
+        'r' : math_template,
+        'g' : math_template,
+        'b' : math_template
+        }
+        )
 
 
     def set_location(self, node_list):
         x_pos = 200
+        counter = 0
         for node in node_list:
-            node.location = (x_pos, 0)
+            if counter%2 == 1:
+                node.location = (x_pos, -50)
+            else: node.location = (x_pos, 50)
+            counter+=1
             x_pos -= 250
-    
-        node_list[2].location = (node_list[2].location.x, +150)
-        node_list[3].location = (node_list[3].location.x, -300)
+
 
         
 
