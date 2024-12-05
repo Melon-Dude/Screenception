@@ -35,7 +35,7 @@ class AssignScreenMaterial():
     screen_num = 0
 
     def __init__(self):
-        self.create_material
+        self.create_material()
 
     def check_material_existance(self):
         exists = False
