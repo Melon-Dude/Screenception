@@ -51,15 +51,14 @@ class ScreenMaterial():
         screen_mat = bpy.data.materials.new(name=f"Screen")
         #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
-        self.setup_material(screen_mat)
-    
-    def setup_material(self, screen_mat):
+        self.create_material(self, screen_mat)
+
+        
+    def create_nodes( self, screen_mat):
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
         self.create_nodes(node_tree, screen_nodes)
-        
-    def create_nodes( self, node_tree, screen_nodes):
         nodes = {
         'output_node' : screen_nodes.get('Material Output'),
         'bsdf_node' : screen_nodes.get('Principled BSDF'),
@@ -82,17 +81,12 @@ class ScreenMaterial():
 
         self.link_nodes(nodes, node_tree)
         self.set_location(nodes)
-
-
-  
-        
-
+        self.assign_values(nodes)
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
         math_template.operation = 'MULTIPLY'
         return(math_template)
-
 
     def set_location(self, nodes):
         x_pos = 200
