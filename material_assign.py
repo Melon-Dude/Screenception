@@ -3,14 +3,12 @@ import bpy_extras.image_utils as bpyimage
 from bpy_extras.io_utils import ImportHelper
 from bpy.types import (Panel, Menu, Operator, PropertyGroup)
 from bpy.props import (StringProperty,
-                       BoolProperty,
                        IntProperty,
                        FloatProperty,
-                       FloatVectorProperty,
                        EnumProperty,
-                       PointerProperty,
+                       PointerProperty
                        )
-
+from bpy.utils import register_class, unregister_class
 
 bl_info= {
     "name" : "Screenify",
@@ -62,17 +60,20 @@ class ScreenMaterialOperator(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     
-        
+    def execute(self, context):
+        screenception = context.scene.screenception
+        self.create_material(screenception)
+        return {'FINISHED'}        
 
-    def create_material(self):
+    def create_material(self, screenception):
         screen_mat = bpy.data.materials.new(name=f"Screen")
         #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
-        self.create_nodes()
+        self.create_nodes(screen_mat, screenception)
         self.assign_material(screen_mat)
 
         
-    def create_nodes( self, screen_mat):
+    def create_nodes(self, screen_mat, screenception):
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
@@ -98,6 +99,7 @@ class ScreenMaterialOperator(bpy.types.Operator):
 
         self.link_nodes(nodes, node_tree)
         self.set_location(nodes)
+        self.assign_values(nodes, screenception)
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
@@ -136,35 +138,57 @@ class ScreenMaterialOperator(bpy.types.Operator):
         links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[1])
         links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
     
+    def assign_values(self, nodes, screenception):
+        nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
+        nodes["bsdf_node"].inputs[28].default_value = 1
+        nodes["pixel_scale"].inputs[0].default_value[0] = screenception.x_pixels
+        nodes["pixel_scale"].inputs[0].default_value[1] = screenception.x_pixels
+        nodes["pixel_scale"].inputs[0].default_value[2] = 1
+
+
     def assign_material(self, mat):
         obj = bpy.context.active_object
         obj.data.materials[0] = mat
 
-
-    def execute(self):
-        self.create_material()
-        return {'FINISHED'}
     
 
 
 
-class ScreenCreationPanel(bpy.types.Panel):
+class ScreenCreationPanel(Panel):
     bl_label = "Screenception"
     bl_space_type = 'VIEW_3D'
     bl_region_type = 'UI'
     bl_context = "object"
 
+
     def draw(self, context):
         layout = self.layout
-        layout.prop(m)
+        screenception = context.scene.screenception
+        layout.prop(screenception, "x_pixels")
+        layout.prop(screenception, "y_pixels")
+        layout.prop(screenception, "screen_size")
+
+        layout.separator(factor=1.5)
+        layout.operator("screen_material_operator")
+
+
+classes = (
+    ScreenMaterialOperator,
+    ScreenProperties,
+    ScreenCreationPanel,
+)
 
 
 def register():
-    #bpy.utils.register_class(ScreenCreationPanel)
-    bpy.utils.register_class(ScreenMaterialOperator)
+    for c in classes:
+        register_class(c)
+
+    bpy.types.Scene.screenception = PointerProperty(ScreenProperties)
 
 def unregister():
- bpy.utils.unregister_class(ScreenMaterialOperator)
+    for c in reversed(classes):
+        unregister_class(c)
+    del bpy.types.Scene.screenception
 
 if __name__ == "__main__":
     register()
