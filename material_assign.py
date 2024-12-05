@@ -61,26 +61,27 @@ class ScreenMaterial():
         self.create_nodes(node_tree, screen_nodes)
         
     def create_nodes( self, node_tree, screen_nodes):
-        bsdf_node = screen_nodes.get('Principled BSDF')
-        output_node = screen_nodes.get('Material Output')
-        img_node = screen_nodes.new('ShaderNodeTexImage')
-        sep_rgb_node_img = screen_nodes.new('ShaderNodeSeparateColor')
-        pixel_node = screen_nodes.new('ShaderNodeTexImage')
-        sep_rgb_node_pix = screen_nodes.new('ShaderNodeSeparateColor')
-        r = self.mult_template(screen_nodes)
-        g = self.mult_template(screen_nodes)
-        b = self.mult_template(screen_nodes)
-        mapping_node = screen_nodes.new('ShaderNodeMapping')
-        coord_node = screen_nodes.new('ShaderNodeTexCoord')
+        nodes = {
+        'output_node' : screen_nodes.get('Material Output'),
+        'bsdf_node' : screen_nodes.get('Principled BSDF'),
+        'r' : self.mult_template(screen_nodes),
+        'g' : self.mult_template(screen_nodes),
+        'b' : self.mult_template(screen_nodes),
+        'img_node' : screen_nodes.new('ShaderNodeTexImage'),
+        'sep_rgb_node_img' : screen_nodes.new('ShaderNodeSeparateColor'),
+        'pixel_node' : screen_nodes.new('ShaderNodeTexImage'),
+        'sep_rgb_node_pix' : screen_nodes.new('ShaderNodeSeparateColor'),
+        'mapping_node' : screen_nodes.new('ShaderNodeMapping'),
+        'coord_node' : screen_nodes.new('ShaderNodeTexCoord')
+        }
         if self.is_crt:
             crt_tex = screen_nodes.new("ShaderNodeTexWave")
         
 
-        node_list = [output_node, bsdf_node, r, g, b, sep_rgb_node_img, img_node, sep_rgb_node_pix, pixel_node, mapping_node, coord_node]
-        self.set_location(node_list)
-        self.link_nodes(node_list)
+        self.set_location(nodes)
+        self.link_nodes(nodes)
 
-    def link_nodes(self):
+  
         
 
 
@@ -90,16 +91,18 @@ class ScreenMaterial():
         return(math_template)
 
 
-    def set_location(self, node_list):
+    def set_location(self, nodes):
         x_pos = 200
         counter = 0
-        for node in node_list:
+        for node in nodes.values():
             if counter%2 == 1:
                 node.location = (x_pos, -50)
             else: node.location = (x_pos, 50)
             counter+=1
             x_pos -= 250
         # Somewhat unorganized result, may need to redo later.
+
+    def link_nodes(self):
 
 
         
