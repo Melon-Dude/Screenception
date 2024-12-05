@@ -64,9 +64,9 @@ class ScreenMaterial():
         'output_node' : screen_nodes.get('Material Output'),
         'bsdf_node' : screen_nodes.get('Principled BSDF'),
         'combine_rgb' : screen_nodes.new('ShaderNodeCombineColor'),
-        'r' : screen_nodes.new('ShaderNodeMath'),
-        'g' : screen_nodes.new('ShaderNodeMath'),
-        'b' : screen_nodes.new('ShaderNodeMath'),
+        'r' : self.mult_template(screen_nodes),
+        'g' : self.mult_template(screen_nodes),
+        'b' : self.mult_template(screen_nodes),
         'img_node' : screen_nodes.new('ShaderNodeTexImage'),
         'sep_rgb_node_img' : screen_nodes.new('ShaderNodeSeparateColor'),
         'pixel_node' : screen_nodes.new('ShaderNodeTexImage'),
@@ -92,8 +92,8 @@ class ScreenMaterial():
         links.new(nodes['sep_rgb_node_pix'].outputs['Blue'], nodes['b'].inputs[1])
         links.new(nodes['sep_rgb_node_pix'].outputs['Green'], nodes['g'].inputs[1])
         links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[0])
-        links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[1])
-        links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[2])
+        links.new(nodes['b'].outputs['Value'], nodes['combine_rgb'].inputs[1])
+        links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[2])
         links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[28])
 
         self.set_location(nodes)
