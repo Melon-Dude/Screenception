@@ -1,5 +1,5 @@
 import bpy
-import os
+import os.path
 from bpy.types import (Panel, Menu, Operator, PropertyGroup)
 from bpy.props import (StringProperty,
                        IntProperty,
@@ -33,10 +33,17 @@ class SC_PG_ScreenProperties(PropertyGroup):
         max = 10000,
     )
 
-    screen_ppi: FloatProperty(
-        name = "Pixels per inch (PPI)",
-        description="Pixels per inch of the screen, will be used to calculate size.",
-        default = 45,
+    screen_size: FloatProperty(
+        name = "Size of screen (in)",
+        description="Size of the screen.",
+        default = 50,
+        min = 0,
+    )
+
+    emit_strength: FloatProperty(
+        name = "Screen Brightness",
+        description="How bright the screen is.",
+        default = 1,
         min = 0,
     )
 
@@ -70,8 +77,11 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
-        pixel = bpy.data.images.load
-        self.create_material(screenception, image)
+        if screenception.screen_type == "Billboard":
+            pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel_billboard.png'))
+        else:
+            pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel.png'))
+        self.create_material(screenception, image, pixel)
         return {'FINISHED'}        
 
 
@@ -86,15 +96,15 @@ class SC_OT_ScreenMaterialOperator(Operator):
 
 
 
-    def create_material(self, screenception, image):
+    def create_material(self, screenception, image, pixel):
         screen_mat = bpy.data.materials.new(name=f"Screen")
         #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
-        self.create_nodes(screen_mat, screenception, image)
+        self.create_nodes(screen_mat, screenception, image, pixel)
         self.assign_material(screen_mat)
 
         
-    def create_nodes(self, screen_mat, screenception, image):
+    def create_nodes(self, screen_mat, screenception, image, pixel):
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
@@ -116,11 +126,12 @@ class SC_OT_ScreenMaterialOperator(Operator):
         }
         if screenception.screen_type == "CRT":
             nodes['wave'] = screen_nodes.new("ShaderNodeTexWave")
+            nodes['crt_mix'] = screen_nodes.new("ShaderNodeMix")
         
 
-        self.link_nodes(nodes, node_tree)
+        self.link_nodes(nodes, node_tree, screenception)
         self.set_location(nodes)
-        self.assign_values(nodes, screenception, image)
+        self.assign_values(nodes, screenception, image, pixel)
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
@@ -138,7 +149,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
             x_pos -= 250
         # Somewhat unorganized result, may need to redo later.
 
-    def link_nodes(self, nodes, node_tree):
+    def link_nodes(self, nodes, node_tree, screenception):
 
         links = node_tree.links
         links.new(nodes['coord_node'].outputs['UV'], nodes['img_mapping_node'].inputs[0])
@@ -157,15 +168,26 @@ class SC_OT_ScreenMaterialOperator(Operator):
         links.new(nodes['r'].outputs['Value'], nodes['combine_rgb'].inputs[0])
         links.new(nodes['b'].outputs['Value'], nodes['combine_rgb'].inputs[2])
         links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[1])
-        links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
+        if screenception.screen_type == "CRT":
+            links.new(nodes['combine_rgb'].outputs['Color'], nodes['crt_mix'].inputs[1])
+            links.new(nodes['wave'].outputs['Fac'], nodes['crt_mix'].inputs[2])
+            links.new(nodes['crt_mix'].outputs['Result'], nodes['bsdf_node'].inputs[27])
+        else:
+            links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
+
+
     
-    def assign_values(self, nodes, screenception, image):
+    def assign_values(self, nodes, screenception, image, pixel):
         nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
         nodes["bsdf_node"].inputs[28].default_value = 1
         nodes["pixel_scale"].inputs[0].default_value[0] = screenception.x_pixels
         nodes["pixel_scale"].inputs[0].default_value[1] = screenception.y_pixels
         nodes["pixel_scale"].inputs[0].default_value[2] = 1
         nodes["img_node"].image = image
+        nodes["pixel_node"].image = pixel
+        
+        if screenception.screen_type == "CRT":
+        
 
 
     def assign_material(self, mat):
