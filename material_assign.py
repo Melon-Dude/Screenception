@@ -1,6 +1,6 @@
 import bpy
 import os.path
-from bpy.types import (Panel, Menu, Operator, PropertyGroup)
+from bpy.types import (Panel, Operator, PropertyGroup)
 from bpy.props import (StringProperty,
                        IntProperty,
                        FloatProperty,
@@ -33,12 +33,20 @@ class SC_PG_ScreenProperties(PropertyGroup):
         max = 10000,
     )
 
-    screen_size: FloatProperty(
-        name = "Size of screen (in)",
-        description="Size of the screen.",
+    width: FloatProperty(
+        name = "Width of screen (in)",
+        description="Width of the screen (in)",
         default = 50,
         min = 0,
     )
+
+    height: FloatProperty(
+            name = "Height of screen (in)",
+            description="Height of the screen (in)",
+            default = 50,
+            min = 0,
+        )
+
 
     emit_strength: FloatProperty(
         name = "Screen Brightness",
@@ -70,7 +78,7 @@ class SC_PG_ScreenProperties(PropertyGroup):
 class SC_OT_ScreenMaterialOperator(Operator):
 
     bl_idname = "sc.material_operator"
-    bl_label = "Assign Screen Material to Specified Object"
+    bl_label = "Create Screen Material"
     bl_options = {'REGISTER', 'UNDO'}
 
     
@@ -81,6 +89,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel_billboard.png'))
         else:
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel.png'))
+        self.create_mesh(screenception)
         self.create_material(screenception, image, pixel)
         return {'FINISHED'}        
 
@@ -88,12 +97,19 @@ class SC_OT_ScreenMaterialOperator(Operator):
 
 
     def create_mesh(self, screenception):
-        bpy.ops.mesh.primitive_plane_add(align='CURSOR',scale=self.calculate_scale(screenception))
+        bpy.ops.mesh.primitive_plane_add(align='CURSOR')
+        screen_mesh = bpy.context.active_object
+        screen_mesh.scale = self.calculate_scale(screenception)
+
+
 
 
     def calculate_scale(self, screenception):
-        screenception.
-
+        #Meter to inch conversion, only technically correct if world unit is in meters, can add feature to check later
+        #Divide by 2, as 
+        width = ((screenception.width/2)*0.0254) 
+        height = ((screenception.height/2)*0.0254) 
+        return(width, height, 1)
 
 
     def create_material(self, screenception, image, pixel):
@@ -187,12 +203,18 @@ class SC_OT_ScreenMaterialOperator(Operator):
         nodes["pixel_node"].image = pixel
         
         if screenception.screen_type == "CRT":
+            nodes["wave"].inputs[1].default_value = 15
+            nodes["crt_mix"].data_type = 'RGBA'
+            nodes["crt_mix"].inputs[0].default_value = .75
         
 
 
-    def assign_material(self, mat):
+    def assign_material(self, material):
         obj = bpy.context.active_object
-        obj.data.materials[0] = mat
+        if obj.data.materials:
+            obj.data.materials[0] = material
+        else:
+            obj.data.materials.append(material)
 
     
 
@@ -212,7 +234,8 @@ class OBJECT_PT_ScreenPanel(Panel):
         screenception = context.scene.screenception
         layout.prop(screenception, "x_pixels")
         layout.prop(screenception, "y_pixels")
-        layout.prop(screenception, "screen_size")
+        layout.prop(screenception, "width")
+        layout.prop(screenception, "height")
         layout.prop(screenception, "screen_type")
         layout.prop(screenception, "img_path")
 
