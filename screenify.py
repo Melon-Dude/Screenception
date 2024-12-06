@@ -201,13 +201,15 @@ class SC_OT_ScreenMaterialOperator(Operator):
     
     def assign_values(self, nodes, screenception, image, pixel, img_size):
         nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
+        nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
         nodes["bsdf_node"].inputs[28].default_value = screenception.emit_strength
         nodes["pixel_scale"].inputs[0].default_value[0] = img_size[0]
         nodes["pixel_scale"].inputs[0].default_value[1] = img_size[1]
         nodes["pixel_scale"].inputs[0].default_value[2] = 1
         nodes["img_node"].image = image
+        nodes["img_node"].interpolation = 'Closest'
         nodes["pixel_node"].image = pixel
-        
+                
         if screenception.screen_type == "CRT":
             nodes["wave"].inputs[1].default_value = 15
             nodes["crt_mix"].data_type = 'RGBA'
