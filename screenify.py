@@ -7,12 +7,24 @@ from bpy.props import (StringProperty,
                        EnumProperty,
                        PointerProperty
                        )
-from bpy.utils import register_class, unregister_class
+from bpy.utils import register_class, unregister_class, resource_path
 from bpy_extras.image_utils import load_image
+from pathlib import Path
+
+user = Path(resource_path('USER'))
+addon = "Screenception"
+pixel = "single_pixel.png"
+pixel_bb = "single_pixel_billboard.png"
+srcPath_pixel = user / "scripts/addons" / addon / "single_pixel_image" / pixel
+srcPath_pixel_bb = user / "scripts/addons" / addon / "single_pixel_image" / pixel_bb
+
+srcFile_pixel = str(srcPath_pixel)
+srcFile_pixel_bb = str(srcPath_pixel_bb)
 
 bl_info= {
     "name" : "Screenify",
     "blender" : (4, 3, 0),
+    "author" : "Alex Schweiger"
     }
 
 
@@ -45,8 +57,8 @@ class SC_PG_ScreenProperties(PropertyGroup):
     screen_type: EnumProperty(
         name = "Display Type",
         description="Changes the style of display",
-        items=[('OP1', 'Regular', ''),
-               ('OP2', 'Billboard', ''),
+        items=[('OP1', 'Regular', 'Regular'),
+               ('OP2', 'Billboard', 'Billboard'),
                ('OP2', 'CRT', '')
                ]
     )
@@ -72,23 +84,25 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
-        image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_size = image.size
+        image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
+        img_resize = image.size
         if screenception.screen_type == "Billboard":
-            pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel_billboard.png'))
+            pixel = bpy.data.images.load(srcFile_pixel_bb)
         else:
-            pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel.png'))
-        self.create_mesh(img_size, screenception)
+            pixel = bpy.data.images.load(srcFile_pixel)
+        self.create_mesh(img_resize, screenception)
         self.create_material(screenception, image, pixel, img_size)
         return {'FINISHED'}
 
 
 
 
-    def create_mesh(self, img_size, screenception):
+    def create_mesh(self, img_resize, screenception):
         bpy.ops.mesh.primitive_plane_add(align='CURSOR')
         screen_mesh = bpy.context.active_object
-        screen_mesh.scale = self.calculate_scale(img_size, screenception)
+        screen_mesh.scale = self.calculate_scale(img_resize, screenception)
+        bpy.ops.object.transform_apply(scale=True)
 
 
 
@@ -233,7 +247,7 @@ class OBJECT_PT_ScreenPanel(Panel):
         layout.separator(factor=1.5)
         layout.prop(screenception, "resize_fac")
         layout.prop(screenception, "emit_strength")
-        layout.prop(screenception, "screen_type")
+        #layout.prop(screenception, "screen_type")
         layout.prop(screenception, "img_path")
 
         layout.separator(factor=1.5)
