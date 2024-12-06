@@ -18,42 +18,20 @@ bl_info= {
 
 class SC_PG_ScreenProperties(PropertyGroup):
 
-    x_pixels: IntProperty(
-        name = "Horizontal Pixels",
-        description="Pixels on the horizontal axis of the screen (X axis)",
-        default = 1920,
-        min = 0,
-        max = 10000,
-    )
-
-    y_pixels: IntProperty(
-        name = "Vertical Pixels",
-        description="Pixels on the vertical axis of the screen (Y axis)",
-        default = 1080,
-        min = 0,
-        max = 10000,
-    )
-
-    width: FloatProperty(
-        name = "Width of screen (in)",
-        description="Width of the screen (in)",
-        default = 50,
-        min = 0,
-    )
-
-    height: FloatProperty(
-            name = "Height of screen (in)",
-            description="Height of the screen (in)",
-            default = 50,
-            min = 0,
-        )
     
-    res_scale_fac: FloatProperty(
+    resize_fac: FloatProperty(
             name = "Resolution Scale Factor",
             description="Scales image to be a different resolution",
             default = 1,
             min = 0,
             max=5
+        )
+    
+    pixel_density: FloatProperty(
+            name = "Pixel Density (PPI)",
+            description="Pixel density per inch",
+            default = 50,
+            min = 0,
         )
 
 
@@ -94,32 +72,34 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
+        image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_size = image.size
         if screenception.screen_type == "Billboard":
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel_billboard.png'))
         else:
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel.png'))
-        self.create_mesh()
+        self.create_mesh(img_size, screenception)
         self.create_material(screenception, image, pixel, img_size)
         return {'FINISHED'}
 
 
 
 
-    def create_mesh(self, img_res):
+    def create_mesh(self, img_size, screenception):
         bpy.ops.mesh.primitive_plane_add(align='CURSOR')
         screen_mesh = bpy.context.active_object
-        screen_mesh.scale = (img_res[0], img_res[1], 1)
+        screen_mesh.scale = self.calculate_scale(img_size, screenception)
 
 
 
 
-    def calculate_scale(self, screenception):
+    def calculate_scale(self, img_size, screenception):
         #Meter to inch conversion, only technically correct if world unit is in meters, can add feature to check later
         #Divide by 2, as 
-        width = ((screenception.width/2)*0.0254) 
-        height = ((screenception.height/2)*0.0254) 
-        return(width, height, 1)
+        width = ((img_size[0])*0.0254)/screenception.pixel_density
+        height = ((img_size[1])*0.0254)/screenception.pixel_density
+        return(width/2, height/2, 1)
+        
 
 
     def create_material(self, screenception, image, pixel, img_size):
@@ -149,6 +129,8 @@ class SC_OT_ScreenMaterialOperator(Operator):
         'pix_mapping_node' : screen_nodes.new('ShaderNodeMapping'),
         'pixel_scale' : screen_nodes.new('ShaderNodeVectorTransform'),
         'coord_node' : screen_nodes.new('ShaderNodeTexCoord')
+
+
         }
         if screenception.screen_type == "CRT":
             nodes['wave'] = screen_nodes.new("ShaderNodeTexWave")
@@ -207,7 +189,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
         nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
         nodes["bsdf_node"].inputs[28].default_value = screenception.emit_strength
         nodes["pixel_scale"].inputs[0].default_value[0] = img_size[0]
-        nodes["pixel_scale"].inputs[0].default_value[1] = img_size[1] //
+        nodes["pixel_scale"].inputs[0].default_value[1] = img_size[1]
         nodes["pixel_scale"].inputs[0].default_value[2] = 1
         nodes["img_node"].image = image
         nodes["pixel_node"].image = pixel
@@ -242,13 +224,14 @@ class OBJECT_PT_ScreenPanel(Panel):
     def draw(self, context):
         layout = self.layout
         screenception = context.scene.screenception
-        layout.prop(screenception, "x_pixels")
-        layout.prop(screenception, "y_pixels")
+
         layout.separator(factor=1.5)
-        layout.prop(screenception, "width")
-        layout.prop(screenception, "height")
+        #layout.prop(screenception, "width")
+        #layout.prop(screenception, "height")
+        layout.prop(screenception, "pixel_density")
+
         layout.separator(factor=1.5)
-        layout.prop(screenception, "res_scale_fac")
+        layout.prop(screenception, "resize_fac")
         layout.prop(screenception, "emit_strength")
         layout.prop(screenception, "screen_type")
         layout.prop(screenception, "img_path")
