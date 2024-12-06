@@ -8,6 +8,7 @@ from bpy.props import (StringProperty,
                        PointerProperty
                        )
 from bpy.utils import register_class, unregister_class
+from bpy_extras.image_utils import load_image
 
 bl_info= {
     "name" : "Screenify",
@@ -46,11 +47,19 @@ class SC_PG_ScreenProperties(PropertyGroup):
             default = 50,
             min = 0,
         )
+    
+    res_scale_fac: FloatProperty(
+            name = "Resolution Scale Factor",
+            description="Scales image to be a different resolution",
+            default = 1,
+            min = 0,
+            max=5
+        )
 
 
     emit_strength: FloatProperty(
         name = "Screen Brightness",
-        description="How bright the screen is.",
+        description="How bright the screen is",
         default = 1,
         min = 0,
     )
@@ -65,11 +74,11 @@ class SC_PG_ScreenProperties(PropertyGroup):
     )
 
     img_path: StringProperty(
-        name = "Image",
+        name = "Image_Path",
         description="Choose an Image:",
         default="",
         maxlen=1024,
-        subtype='DIR_PATH' # FILE_PATH
+        subtype='FILE_PATH'
         )
 
 
@@ -85,21 +94,22 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
+        img_size = image.size
         if screenception.screen_type == "Billboard":
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel_billboard.png'))
         else:
             pixel = bpy.data.images.load(os.path.join('single_pixel_image', 'single_pixel.png'))
-        self.create_mesh(screenception)
-        self.create_material(screenception, image, pixel)
-        return {'FINISHED'}        
+        self.create_mesh()
+        self.create_material(screenception, image, pixel, img_size)
+        return {'FINISHED'}
 
 
 
 
-    def create_mesh(self, screenception):
+    def create_mesh(self, img_res):
         bpy.ops.mesh.primitive_plane_add(align='CURSOR')
         screen_mesh = bpy.context.active_object
-        screen_mesh.scale = self.calculate_scale(screenception)
+        screen_mesh.scale = (img_res[0], img_res[1], 1)
 
 
 
@@ -112,15 +122,15 @@ class SC_OT_ScreenMaterialOperator(Operator):
         return(width, height, 1)
 
 
-    def create_material(self, screenception, image, pixel):
+    def create_material(self, screenception, image, pixel, img_size):
         screen_mat = bpy.data.materials.new(name=f"Screen")
         #self.screen_num += 1
         #Creates additional material every time function is run to avoid issues, may be unnecessary as blender already does this.
-        self.create_nodes(screen_mat, screenception, image, pixel)
+        self.create_nodes(screen_mat, screenception, image, pixel, img_size)
         self.assign_material(screen_mat)
 
         
-    def create_nodes(self, screen_mat, screenception, image, pixel):
+    def create_nodes(self, screen_mat, screenception, image, pixel, img_size):
         screen_mat.use_nodes = True
         node_tree = screen_mat.node_tree
         screen_nodes = node_tree.nodes
@@ -147,7 +157,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
 
         self.link_nodes(nodes, node_tree, screenception)
         self.set_location(nodes)
-        self.assign_values(nodes, screenception, image, pixel)
+        self.assign_values(nodes, screenception, image, pixel, img_size)
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
@@ -193,11 +203,11 @@ class SC_OT_ScreenMaterialOperator(Operator):
 
 
     
-    def assign_values(self, nodes, screenception, image, pixel):
+    def assign_values(self, nodes, screenception, image, pixel, img_size):
         nodes["bsdf_node"].inputs[0].default_value = (0, 0, 0, 1)
-        nodes["bsdf_node"].inputs[28].default_value = 1
-        nodes["pixel_scale"].inputs[0].default_value[0] = screenception.x_pixels
-        nodes["pixel_scale"].inputs[0].default_value[1] = screenception.y_pixels
+        nodes["bsdf_node"].inputs[28].default_value = screenception.emit_strength
+        nodes["pixel_scale"].inputs[0].default_value[0] = img_size[0]
+        nodes["pixel_scale"].inputs[0].default_value[1] = img_size[1] //
         nodes["pixel_scale"].inputs[0].default_value[2] = 1
         nodes["img_node"].image = image
         nodes["pixel_node"].image = pixel
@@ -234,8 +244,12 @@ class OBJECT_PT_ScreenPanel(Panel):
         screenception = context.scene.screenception
         layout.prop(screenception, "x_pixels")
         layout.prop(screenception, "y_pixels")
+        layout.separator(factor=1.5)
         layout.prop(screenception, "width")
         layout.prop(screenception, "height")
+        layout.separator(factor=1.5)
+        layout.prop(screenception, "res_scale_fac")
+        layout.prop(screenception, "emit_strength")
         layout.prop(screenception, "screen_type")
         layout.prop(screenception, "img_path")
 
