@@ -74,7 +74,7 @@ class SC_PG_ScreenProperties(PropertyGroup):
         name = "Type",
         description="Changes the style of display",
         items=[('REG', 'Regular', 'Regular'),
-               ('BIL', 'Billboard', 'Billboard'),
+               ('BIL', 'Billboard', 'Use a lower resolution to better see the effect'),
                ('CRT', 'CRT', '')
                ]
     )
@@ -100,6 +100,9 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
+        if image.source == "MOVIE":
+            print("video input")
+            print(image.frame_duration)
         img_size = image.size
         image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_resize = image.size
@@ -226,12 +229,16 @@ class SC_OT_ScreenMaterialOperator(Operator):
         nodes["img_node"].interpolation = 'Closest'
         nodes["pixel_node"].image = pixel
                 
+        if image.source == "MOVIE":
+            nodes["img_node"].image_user.frame_duration = image.frame_duration
+            nodes["img_node"].image_user.use_auto_refresh = True
+
         if screenception.screen_type == "CRT":
             nodes["wave"].inputs[1].default_value = screenception.scanline_size
             nodes["wave"].bands_direction = 'Y'
             nodes["crt_mix"].data_type = 'RGBA'
             nodes["crt_mix"].blend_type = 'OVERLAY'
-            nodes["crt_mix"].inputs[0].default_value = .5
+            nodes["crt_mix"].inputs[0].default_value = screenception.scanline_fac
             
         
 
