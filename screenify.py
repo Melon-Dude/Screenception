@@ -47,6 +47,22 @@ class SC_PG_ScreenProperties(PropertyGroup):
         )
 
 
+    scanline_size: FloatProperty(
+            name = "Scanlines",
+            description="Amount/size of scanlines for CRT",
+            default = 30,
+            min = 0,
+        )
+
+    scanline_fac: FloatProperty(
+            name = "Scanline Visibility",
+            description="How visible scanlines appear to be",
+            default = .5,
+            min = 0,
+            max = 1,
+        )
+
+
     emit_strength: FloatProperty(
         name = "Screen Brightness",
         description="How bright the screen is",
@@ -55,11 +71,11 @@ class SC_PG_ScreenProperties(PropertyGroup):
     )
 
     screen_type: EnumProperty(
-        name = "Display Type",
+        name = "Type",
         description="Changes the style of display",
-        items=[('OP1', 'Regular', 'Regular'),
-               ('OP2', 'Billboard', 'Billboard'),
-               ('OP2', 'CRT', '')
+        items=[('REG', 'Regular', 'Regular'),
+               ('BIL', 'Billboard', 'Billboard'),
+               ('CRT', 'CRT', '')
                ]
     )
 
@@ -87,7 +103,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
         img_size = image.size
         image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_resize = image.size
-        if screenception.screen_type == "Billboard":
+        if screenception.screen_type == "BIL":
             pixel = bpy.data.images.load(srcFile_pixel_bb)
         else:
             pixel = bpy.data.images.load(srcFile_pixel)
@@ -150,10 +166,10 @@ class SC_OT_ScreenMaterialOperator(Operator):
             nodes['wave'] = screen_nodes.new("ShaderNodeTexWave")
             nodes['crt_mix'] = screen_nodes.new("ShaderNodeMix")
         
-
-        self.link_nodes(nodes, node_tree, screenception)
-        self.set_location(nodes)
         self.assign_values(nodes, screenception, image, pixel, img_size)
+        self.set_location(nodes)
+        self.link_nodes(nodes, node_tree, screenception)
+       
 
     def mult_template(self, screen_nodes):
         math_template = screen_nodes.new('ShaderNodeMath')
@@ -191,8 +207,8 @@ class SC_OT_ScreenMaterialOperator(Operator):
         links.new(nodes['b'].outputs['Value'], nodes['combine_rgb'].inputs[2])
         links.new(nodes['g'].outputs['Value'], nodes['combine_rgb'].inputs[1])
         if screenception.screen_type == "CRT":
-            links.new(nodes['combine_rgb'].outputs['Color'], nodes['crt_mix'].inputs[1])
-            links.new(nodes['wave'].outputs['Fac'], nodes['crt_mix'].inputs[2])
+            links.new(nodes['combine_rgb'].outputs['Color'], nodes['crt_mix'].inputs[6])
+            links.new(nodes['wave'].outputs['Fac'], nodes['crt_mix'].inputs[7])
             links.new(nodes['crt_mix'].outputs['Result'], nodes['bsdf_node'].inputs[27])
         else:
             links.new(nodes['combine_rgb'].outputs['Color'], nodes['bsdf_node'].inputs[27])
@@ -211,9 +227,12 @@ class SC_OT_ScreenMaterialOperator(Operator):
         nodes["pixel_node"].image = pixel
                 
         if screenception.screen_type == "CRT":
-            nodes["wave"].inputs[1].default_value = 15
+            nodes["wave"].inputs[1].default_value = screenception.scanline_size
+            nodes["wave"].bands_direction = 'Y'
             nodes["crt_mix"].data_type = 'RGBA'
-            nodes["crt_mix"].inputs[0].default_value = .75
+            nodes["crt_mix"].blend_type = 'OVERLAY'
+            nodes["crt_mix"].inputs[0].default_value = .5
+            
         
 
 
@@ -241,6 +260,11 @@ class OBJECT_PT_ScreenPanel(Panel):
         layout = self.layout
         screenception = context.scene.screenception
 
+        layout.prop(screenception, "screen_type")
+        if screenception.screen_type == "CRT":
+            layout.prop(screenception, "scanline_size")
+            layout.prop(screenception, "scanline_fac")
+
         layout.separator(factor=1.5)
         #layout.prop(screenception, "width")
         #layout.prop(screenception, "height")
@@ -249,7 +273,6 @@ class OBJECT_PT_ScreenPanel(Panel):
         layout.separator(factor=1.5)
         layout.prop(screenception, "resize_fac")
         layout.prop(screenception, "emit_strength")
-        #layout.prop(screenception, "screen_type")
         layout.prop(screenception, "img_path")
 
         layout.separator(factor=1.5)
