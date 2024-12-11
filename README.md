@@ -2,7 +2,7 @@
 A Blender 3D PBR screen generator!
 
 
-## Repository: https://github.com/Melon-Dude/Screenception/blob/main/screenify.py
+## Repository: https://github.com/Melon-Dude/Screenception/
 
 ## Video: https://youtu.be/3UZ7Af5ss9c
 
