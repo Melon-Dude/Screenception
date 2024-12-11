@@ -80,8 +80,8 @@ class SC_PG_ScreenProperties(PropertyGroup):
     )
 
     img_path: StringProperty(
-        name = "Image_Path",
-        description="Choose an Image:",
+        name = "Path",
+        description="Choose an Image or Video:",
         default="",
         maxlen=1024,
         subtype='FILE_PATH'
@@ -100,11 +100,13 @@ class SC_OT_ScreenMaterialOperator(Operator):
     def execute(self, context):
         screenception = context.scene.screenception
         image = bpy.data.images.load(screenception.img_path)
-        if image.source == "MOVIE":
-            print("video input")
-            print(image.frame_duration)
         img_size = image.size
-        image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
+        if image.source == "MOVIE":
+            image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
+            for i in range(0, image.frame_duration+1):
+                image.scale(int(img_size[0]), int(img_size[1]), frame = i)
+        else:
+            image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_resize = image.size
         if screenception.screen_type == "BIL":
             pixel = bpy.data.images.load(srcFile_pixel_bb)
