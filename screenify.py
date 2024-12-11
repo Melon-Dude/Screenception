@@ -102,9 +102,10 @@ class SC_OT_ScreenMaterialOperator(Operator):
         image = bpy.data.images.load(screenception.img_path)
         img_size = image.size
         if image.source == "MOVIE":
-            image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
-            for i in range(0, image.frame_duration+1):
-                image.scale(int(img_size[0]), int(img_size[1]), frame = i)
+            if screenception.resize_fac != 1:
+                image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
+                for i in range(0, image.frame_duration+1):
+                    image.scale(int(img_size[0]), int(img_size[1]), frame = i)
         else:
             image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
         img_resize = image.size
