@@ -36,7 +36,7 @@ class SC_PG_ScreenProperties(PropertyGroup):
             description="Scales image to be a different resolution",
             default = 1,
             min = 0,
-            max=5
+            max = 2
         )
     
     pixel_density: FloatProperty(
