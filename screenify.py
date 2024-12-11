@@ -103,12 +103,13 @@ class SC_OT_ScreenMaterialOperator(Operator):
         img_size = image.size
         if image.source == "MOVIE":
             if screenception.resize_fac != 1:
-                self.report({'INFO'}, f'Resizing {image.frame_duration} frames')
                 image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
                 for i in range(0, image.frame_duration+1):
                     image.scale(int(img_size[0]), int(img_size[1]), frame = i)
-        else:
+                self.report({'INFO'}, f'Resized {image.frame_duration} frames to {img_size[0]} px wide, {img_size[1]} px high')
+        elif screenception.resize_fac != 1:
             image.scale(int(image.size[0] * screenception.resize_fac), int(image.size[1] * screenception.resize_fac))
+            self.report({'INFO'}, f'Resized to {img_size[0]} px wide, {img_size[1]} px high')
         img_resize = image.size
         if screenception.screen_type == "BIL":
             pixel = bpy.data.images.load(srcFile_pixel_bb)
@@ -116,7 +117,7 @@ class SC_OT_ScreenMaterialOperator(Operator):
             pixel = bpy.data.images.load(srcFile_pixel)
         self.create_mesh(img_resize, screenception)
         self.create_material(screenception, image, pixel, img_size)
-        self.report({'INFO'}, f'Created {screenception.screen_type} screen')
+        self.report({'INFO'}, 'Created screen')
         return {'FINISHED'}
 
 
@@ -275,7 +276,7 @@ class OBJECT_PT_ScreenPanel(Panel):
         layout.prop(screenception, "screen_type")
         if screenception.screen_type == "CRT":
             layout.prop(screenception, "scanline_size")
-            layout.prop(screenception, "scanline_fac")
+            layout.prop(screenception, "scanline_fac", slider=True)
 
         layout.separator(factor=1.5)
         #layout.prop(screenception, "width")
