@@ -22,9 +22,13 @@ srcFile_pixel = str(srcPath_pixel)
 srcFile_pixel_bb = str(srcPath_pixel_bb)
 
 bl_info= {
-    "name" : "Screenify",
+    "name" : "Screenception",
     "blender" : (4, 3, 0),
-    "author" : "Alex Schweiger"
+    "version" : (1, 1),
+    "description" : "Create physically accurate screen materials",
+    "author" : "Alex Schweiger",
+    "category" : "Material",
+    "location" : "3D Viewport -> N menu"
     }
 
 
